@@ -1,0 +1,19 @@
+# Claude Code
+.claude/
+
+# Go binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+mcp-wikipedia-server
+mcp-client
+
+# Environment files
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
