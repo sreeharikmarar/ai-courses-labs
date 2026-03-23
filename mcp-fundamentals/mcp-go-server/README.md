@@ -32,7 +32,7 @@ The project includes a Go MCP client that connects to the server via stdio, disc
 ### Run
 
 ```bash
-OPENAI_API_KEY=<..> ./mcp-client
+OPENAI_API_KEY=<API_KEY> ./mcp-client
 ```
 
 The client expects the `mcp-wikipedia-server` binary in the current directory.
@@ -52,8 +52,8 @@ Any other input is sent as a question to the GPT-4o agent loop.
 ### Interactive Test Run
 
 ![img1](./assets/1.png)
-![img1](./assets/2.png)
-![img1](./assets/3.png)
+![img2](./assets/2.png)
+![img3](./assets/3.png)
 
 ## Run (Server)
 
