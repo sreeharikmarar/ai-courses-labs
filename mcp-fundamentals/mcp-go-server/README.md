@@ -25,6 +25,16 @@ go build -o mcp-wikipedia-server .
 go build -o mcp-client ./cmd/client
 ```
 
+## Components
+
+| Type     | Name                       | Description                                       |
+|----------|----------------------------|---------------------------------------------------|
+| Tool     | `fetch_wikipedia_info`     | Search Wikipedia and return title, summary, URL   |
+| Tool     | `list_wikipedia_sections`  | List section headings of a Wikipedia article      |
+| Tool     | `get_section_content`      | Get content of a specific section                 |
+| Prompt   | `highlight_sections_prompt`| Pick the most important sections from an article  |
+| Resource | `file://suggested_titles`  | Suggested Wikipedia topics from a local file      |
+
 ## Interactive Client
 
 The project includes a Go MCP client that connects to the server via stdio, discovers available tools, and runs an agentic loop using OpenAI GPT-4o. When you type a question, the client sends it to GPT-4o which autonomously decides which MCP tools to call, processes the results, and returns a final answer.
@@ -54,6 +64,7 @@ Any other input is sent as a question to the GPT-4o agent loop.
 ![img1](./assets/1.png)
 ![img2](./assets/2.png)
 ![img3](./assets/3.png)
+![img4](./assets/4.png)
 
 ## Run (Server)
 
@@ -123,13 +134,3 @@ MCP supports a **stdio transport** where the client spawns the server as a child
 ```
 
 This is the same mechanism used by Claude Desktop, VS Code extensions, and other MCP hosts. It's simple, secure (no network surface), and requires zero configuration.
-
-## Components
-
-| Type     | Name                       | Description                                      |
-|----------|----------------------------|--------------------------------------------------|
-| Tool     | `fetch_wikipedia_info`     | Search Wikipedia and return title, summary, URL   |
-| Tool     | `list_wikipedia_sections`  | List section headings of a Wikipedia article      |
-| Tool     | `get_section_content`      | Get content of a specific section                 |
-| Prompt   | `highlight_sections_prompt`| Pick the most important sections from an article  |
-| Resource | `file://suggested_titles`  | Suggested Wikipedia topics from a local file      |
