@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -55,6 +56,15 @@ func main() {
 	)
 	s.AddTool(getSectionContentTool, handleGetSectionContent)
 
+	summarizeArticleTool := mcp.NewTool("summarize_article",
+		mcp.WithDescription("Fetch a complete Wikipedia article summary in a single call: returns title, URL, introduction, and content of all top-level sections. Use this instead of calling fetch_wikipedia_info + list_wikipedia_sections + get_section_content separately."),
+		mcp.WithString("topic",
+			mcp.Required(),
+			mcp.Description("The topic to look up on Wikipedia"),
+		),
+	)
+	s.AddTool(summarizeArticleTool, handleSummarizeArticle)
+
 	// --- Prompt ---
 
 	highlightPrompt := mcp.NewPrompt("highlight_sections_prompt",
@@ -78,8 +88,34 @@ func main() {
 
 	// --- Serve ---
 
-	if err := server.ServeStdio(s); err != nil {
-		log.Fatalf("server error: %v", err)
+	transport := os.Getenv("MCP_TRANSPORT")
+	switch transport {
+	case "http":
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+		addr := ":" + port
+		log.Printf("Starting StreamableHTTP server on %s/mcp", addr)
+		httpServer := server.NewStreamableHTTPServer(s)
+		if err := httpServer.Start(addr); err != nil {
+			log.Fatalf("server error: %v", err)
+		}
+	case "sse":
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+		addr := ":" + port
+		log.Printf("Starting SSE server on %s", addr)
+		sseServer := server.NewSSEServer(s)
+		if err := sseServer.Start(addr); err != nil {
+			log.Fatalf("server error: %v", err)
+		}
+	default:
+		if err := server.ServeStdio(s); err != nil {
+			log.Fatalf("server error: %v", err)
+		}
 	}
 }
 
@@ -152,6 +188,80 @@ func handleGetSectionContent(ctx context.Context, request mcp.CallToolRequest) (
 	}
 
 	return toolResultJSON(map[string]string{"content": content}), nil
+}
+
+// handleSummarizeArticle fetches a complete article overview in a single call.
+func handleSummarizeArticle(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	topic, err := request.RequireString("topic")
+	if err != nil {
+		return errorResult("Missing required parameter: topic"), nil
+	}
+
+	results, err := wikipedia.Search(ctx, topic)
+	if err != nil {
+		return errorResult(fmt.Sprintf("Search failed: %v", err)), nil
+	}
+	if len(results) == 0 {
+		return toolResultJSON(map[string]string{"error": "No results found for your query."}), nil
+	}
+
+	bestMatch := results[0]
+	page, err := wikipedia.GetPageSummary(ctx, bestMatch)
+	if err != nil {
+		return errorResult(fmt.Sprintf("Failed to get page summary: %v", err)), nil
+	}
+
+	pageURL := "https://en.wikipedia.org/wiki/" + url.PathEscape(page.Title)
+
+	sections, err := wikipedia.GetSections(ctx, page.Title)
+	if err != nil {
+		return errorResult(fmt.Sprintf("Failed to get sections: %v", err)), nil
+	}
+
+	// Fetch content for top-level sections (level "2"), skip boilerplate
+	skipSections := map[string]bool{
+		"See also": true, "References": true, "External links": true,
+		"Further reading": true, "Notes": true, "Bibliography": true,
+	}
+
+	type sectionContent struct {
+		Title   string `json:"title"`
+		Content string `json:"content"`
+	}
+
+	var articleSections []sectionContent
+	for _, s := range sections {
+		if s.Level != "2" || skipSections[s.Title] {
+			continue
+		}
+		content, err := wikipedia.GetSectionContent(ctx, page.Title, s.Title)
+		if err != nil {
+			continue
+		}
+		// Truncate very long sections to keep response manageable
+		if len(content) > 2000 {
+			content = content[:2000] + "\n[truncated]"
+		}
+		articleSections = append(articleSections, sectionContent{
+			Title:   s.Title,
+			Content: content,
+		})
+	}
+
+	sectionTitles := make([]string, len(articleSections))
+	for i, s := range articleSections {
+		sectionTitles[i] = s.Title
+	}
+
+	result := map[string]any{
+		"title":        page.Title,
+		"url":          pageURL,
+		"introduction": page.Extract,
+		"sections":     strings.Join(sectionTitles, ", "),
+		"content":      articleSections,
+	}
+
+	return toolResultJSON(result), nil
 }
 
 // handleHighlightSectionsPrompt returns a prompt asking the LLM to pick the most important sections.

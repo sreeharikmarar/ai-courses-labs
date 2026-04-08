@@ -1,0 +1,13 @@
+mcp-wikipedia-server
+mcp-client
+cmd/
+assets/
+*.exe
+*.dll
+*.so
+*.dylib
+.DS_Store
+.env
+.env.local
+.claude/
+README.md
