@@ -127,30 +127,6 @@ This protocol is the same regardless of transport. The two transport options are
 | **stdio** | Client spawns server as child process, talks over OS pipes (stdin/stdout) | Local: desktop apps, CLI tools, IDE extensions |
 | **StreamableHTTP** | Standard HTTP POST to `/mcp` endpoint | Remote: containers, K8s, cloud platforms |
 
-### Example: how different clients connect to the same server
-
-The beauty of MCP is that a single server works with any compliant client. Here's how different hosts connect to this project's Wikipedia server:
-
-**Stdio (local binary):**
-
-| Host | Configuration |
-|------|--------------|
-| Claude Desktop | `"command": "/path/to/mcp-wikipedia-server"` in `claude_desktop_config.json` |
-| Claude Code | `claude mcp add wikipedia /path/to/mcp-wikipedia-server` |
-| Cursor | `"command": "/path/to/mcp-wikipedia-server"` in Cursor MCP settings |
-| Custom client | `client.NewStdioMCPClient("/path/to/mcp-wikipedia-server", nil)` (Go) |
-
-**StreamableHTTP (remote endpoint):**
-
-| Host | Configuration |
-|------|--------------|
-| Claude Desktop | `"type": "streamable-http", "url": "http://host:port/mcp"` |
-| Claude Code | `claude mcp add --transport http wikipedia http://host:port/mcp` |
-| Cursor | URL in Cursor MCP settings |
-| Any HTTP client | `POST http://host:port/mcp` with JSON-RPC body |
-
-You build the server once. Every MCP client can use it.
-
 ---
 
 ## Tips for building MCP servers
@@ -168,36 +144,5 @@ You build the server once. Every MCP client can use it.
 ### [WikipediaSearch MCP Server (Go)](mcp-go-server/)
 
 A complete MCP server implementation covering tools, prompts, resources, multiple transports, containerization, and Kubernetes deployment.
-
-**What you'll learn:**
-- Implementing MCP tools, prompts, and resources in Go using `mcp-go`
-- Designing tools that LLMs can use effectively (descriptions, parameter naming)
-- Fine-grained vs composite tool design
-- Building an interactive MCP client with an agentic LLM loop
-- Switching between stdio and StreamableHTTP transports
-- Containerizing an MCP server with Docker
-- Deploying to a local Kubernetes cluster with Kind
-
-**Components:**
-
-| Type     | Name                        | Description                                                        |
-|----------|-----------------------------|--------------------------------------------------------------------|
-| Tool     | `summarize_article`         | Fetch a complete article (intro + all sections) in a single call   |
-| Tool     | `fetch_wikipedia_info`      | Search Wikipedia and return title, summary, URL                    |
-| Tool     | `list_wikipedia_sections`   | List section headings of a Wikipedia article                       |
-| Tool     | `get_section_content`       | Get content of a specific section                                  |
-| Prompt   | `highlight_sections_prompt` | Pick the most important sections from an article                   |
-| Resource | `file://suggested_titles`   | Suggested Wikipedia topics from a local file                       |
-
-**Deployment:**
-
-| Method | Command | Endpoint |
-|--------|---------|----------|
-| Go binary | `./mcp-wikipedia-server` | stdio (local) |
-| Go binary | `MCP_TRANSPORT=http ./mcp-wikipedia-server` | `http://localhost:8080/mcp` |
-| Docker | `docker run -p 8080:8080 mcp-wikipedia-server` | `http://localhost:8080/mcp` |
-| Kind   | `./deploy/kind-setup.sh` | `http://localhost:30080/mcp` |
-
-**Prerequisites:** Go 1.25+, `OPENAI_API_KEY` (for interactive client), Docker (for containers), Kind + kubectl (for local K8s)
 
 See the [mcp-go-server README](mcp-go-server/) for full build instructions, architecture deep-dive, and client configuration examples.

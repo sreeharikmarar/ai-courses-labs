@@ -255,6 +255,8 @@ The client expects the `mcp-wikipedia-server` binary in the current directory.
 
 | Command                    | Description                          |
 |----------------------------|--------------------------------------|
+| `/tools`                   | List available MCP tools             |
+| `/help`                    | Show help with example queries       |
 | `/prompts`                 | List available MCP prompts           |
 | `/prompt <name> "args"`   | Run a specific prompt via the agent  |
 | `/resources`               | List available MCP resources         |
@@ -263,12 +265,26 @@ The client expects the `mcp-wikipedia-server` binary in the current directory.
 
 Any other input is sent as a question to the GPT-4o agent loop.
 
-### Interactive Test Run
+### Demo
 
-![img1](./assets/1.png)
-![img2](./assets/2.png)
-![img3](./assets/3.png)
-![img4](./assets/4.png)
+![Interactive MCP Client](./assets/demo.gif)
+
+## Claude Code + StreamableHTTP
+
+Connect Claude Code to the MCP server over HTTP:
+
+```bash
+# Start the server in HTTP mode
+MCP_TRANSPORT=http ./mcp-wikipedia-server &
+
+# Register with Claude Code
+claude mcp add --transport http wikipedia http://localhost:8080/mcp
+
+# Use Claude — it will discover and call the Wikipedia tools automatically
+claude
+```
+
+![Claude Code + StreamableHTTP](./assets/demo-claude-cli.gif)
 
 ## Run (Server)
 

@@ -63,13 +63,7 @@ func main() {
 
 	// Interactive REPL
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("\nWikipedia MCP agent is ready.")
-	fmt.Println("Type a question or use the following commands:")
-	fmt.Println("  /prompts                - list available prompts")
-	fmt.Println("  /prompt <name> \"args\"  - run a specific prompt")
-	fmt.Println("  /resources              - list available resources")
-	fmt.Println("  /resource <name>        - read a specific resource")
-	fmt.Println("  exit/quit/q             - exit")
+	printHelp()
 
 	for {
 		fmt.Print("\nYou: ")
@@ -93,11 +87,55 @@ func main() {
 			listResources(ctx, mcpClient)
 		case strings.HasPrefix(input, "/resource "):
 			handleResource(ctx, mcpClient, input)
+		case input == "/tools":
+			listTools(ctx, mcpClient)
+		case input == "/help":
+			printHelp()
 		default:
 			messages = append(messages, openai.UserMessage(input))
 			runAgentLoop(ctx, &aiClient, mcpClient, openaiTools, &messages)
 		}
 	}
+}
+
+func printHelp() {
+	fmt.Println("\nWikipedia MCP agent is ready.")
+	fmt.Println("Ask anything about Wikipedia — the AI will search, browse, and summarize for you.")
+	fmt.Println("")
+	fmt.Println("Example queries:")
+	fmt.Println("  \"Tell me about the Apollo 11 mission\"")
+	fmt.Println("  \"What sections does the Wikipedia article on Rust have?\"")
+	fmt.Println("  \"Show me the History section of the Python article\"")
+	fmt.Println("  \"Summarize the Wikipedia article on Kubernetes\"")
+	fmt.Println("")
+	fmt.Println("Commands:")
+	fmt.Println("  /tools                  - list available MCP tools")
+	fmt.Println("  /help                   - show this help message")
+	fmt.Println("  /prompts                - list available prompts")
+	fmt.Println("  /prompt <name> \"args\"  - run a specific prompt")
+	fmt.Println("  /resources              - list available resources")
+	fmt.Println("  /resource <name>        - read a specific resource")
+	fmt.Println("  exit/quit/q             - exit")
+}
+
+// listTools prints all available MCP tools and their descriptions.
+func listTools(ctx context.Context, mcpClient *client.Client) {
+	result, err := mcpClient.ListTools(ctx, mcp.ListToolsRequest{})
+	if err != nil {
+		fmt.Printf("Failed to list tools: %v\n", err)
+		return
+	}
+
+	if len(result.Tools) == 0 {
+		fmt.Println("No tools found on the server.")
+		return
+	}
+
+	fmt.Println("\nAvailable Tools:")
+	for _, t := range result.Tools {
+		fmt.Printf("  %-25s - %s\n", t.Name, t.Description)
+	}
+	fmt.Println("\nThe AI agent picks the right tool automatically based on your query.")
 }
 
 // convertMCPToolsToOpenAI converts MCP tool definitions to OpenAI function tool parameters.
